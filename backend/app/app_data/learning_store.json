@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "senders": {
+    "calvinklein@em.calvinklein.com": {
+      "counts": {
+        "IMPORTANT": 0,
+        "LESS": 0,
+        "SPAM": 0,
+        "PROMO": 2
+      },
+      "total": 2,
+      "last_ts": 1773071165
+    },
+    "katipagalasandeep@gmail.com": {
+      "counts": {
+        "IMPORTANT": 1,
+        "LESS": 0,
+        "SPAM": 0,
+        "PROMO": 0
+      },
+      "total": 1,
+      "last_ts": 1778639388
+    },
+    "no_reply@email.apple.com": {
+      "counts": {
+        "IMPORTANT": 0,
+        "LESS": 1,
+        "SPAM": 0,
+        "PROMO": 0
+      },
+      "total": 1,
+      "last_ts": 1778639390
+    },
+    "reply@updates.klover.app": {
+      "counts": {
+        "IMPORTANT": 0,
+        "LESS": 2,
+        "SPAM": 2,
+        "PROMO": 0
+      },
+      "total": 4,
+      "last_ts": 1778639407
+    }
+  },
+  "domains": {
+    "em.calvinklein.com": {
+      "counts": {
+        "IMPORTANT": 0,
+        "LESS": 0,
+        "SPAM": 0,
+        "PROMO": 2
+      },
+      "total": 2,
+      "last_ts": 1773071165
+    },
+    "gmail.com": {
+      "counts": {
+        "IMPORTANT": 1,
+        "LESS": 0,
+        "SPAM": 0,
+        "PROMO": 0
+      },
+      "total": 1,
+      "last_ts": 1778639388
+    },
+    "email.apple.com": {
+      "counts": {
+        "IMPORTANT": 0,
+        "LESS": 1,
+        "SPAM": 0,
+        "PROMO": 0
+      },
+      "total": 1,
+      "last_ts": 1778639390
+    },
+    "updates.klover.app": {
+      "counts": {
+        "IMPORTANT": 0,
+        "LESS": 2,
+        "SPAM": 2,
+        "PROMO": 0
+      },
+      "total": 4,
+      "last_ts": 1778639407
+    }
+  },
+  "events": [
+    {
+      "ts": 1773071163,
+      "email_id": "19cd2fd9c6149928",
+      "sender_email": "calvinklein@em.calvinklein.com",
+      "sender_domain": "em.calvinklein.com",
+      "clicked": "PROMO",
+      "subject": "Dakota Johnson Lives in Calvin Klein",
+      "snippet": "New denim and iconic underwear for spring. ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1773071165,
+      "email_id": "19cd2fd9c6149928",
+      "sender_email": "calvinklein@em.calvinklein.com",
+      "sender_domain": "em.calvinklein.com",
+      "clicked": "PROMO",
+      "subject": "Dakota Johnson Lives in Calvin Klein",
+      "snippet": "New denim and iconic underwear for spring. ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1778639388,
+      "email_id": "19e1d3ba55e3d7a3",
+      "sender_email": "katipagalasandeep@gmail.com",
+      "sender_domain": "gmail.com",
+      "clicked": "IMPORTANT",
+      "subject": "",
+      "snippet": "What&#39;s the update on the project you are working on?",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1778639390,
+      "email_id": "19df9aafe74138bc",
+      "sender_email": "no_reply@email.apple.com",
+      "sender_domain": "email.apple.com",
+      "clicked": "LESS",
+      "subject": "Your receipt from Apple.",
+      "snippet": "Receipt May 5, 2026 Order ID: MM63MD3QQV Document: 790129139549 Apple Account: sr7371348@gmail.com Save 3% on all your Apple purchases with Apple Card. 1 Apply and use in minutes. 2 iCloud iCloud+ with",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1778639392,
+      "email_id": "19de53de145f1c00",
+      "sender_email": "reply@updates.klover.app",
+      "sender_domain": "updates.klover.app",
+      "clicked": "SPAM",
+      "subject": "You’ve unlocked K+, Sandeep 🔓 ",
+      "snippet": "Get ready to budget like a boss. ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1778639402,
+      "email_id": "19de53de145f1c00",
+      "sender_email": "reply@updates.klover.app",
+      "sender_domain": "updates.klover.app",
+      "clicked": "SPAM",
+      "subject": "You’ve unlocked K+, Sandeep 🔓 ",
+      "snippet": "Get ready to budget like a boss. ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1778639406,
+      "email_id": "19de53de145f1c00",
+      "sender_email": "reply@updates.klover.app",
+      "sender_domain": "updates.klover.app",
+      "clicked": "LESS",
+      "subject": "You’ve unlocked K+, Sandeep 🔓 ",
+      "snippet": "Get ready to budget like a boss. ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿",
+      "meta": {
+        "ui": "emailcard"
+      }
+    },
+    {
+      "ts": 1778639407,
+      "email_id": "19de53de145f1c00",
+      "sender_email": "reply@updates.klover.app",
+      "sender_domain": "updates.klover.app",
+      "clicked": "LESS",
+      "subject": "You’ve unlocked K+, Sandeep 🔓 ",
+      "snippet": "Get ready to budget like a boss. ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿ ͏ ‌ ﻿",
+      "meta": {
+        "ui": "emailcard"
+      }
+    }
+  ]
+}

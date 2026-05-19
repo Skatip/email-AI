@@ -1,0 +1,136 @@
+/* App.css — light production-ish polish + new UI bits */
+
+:root {
+  --border: rgba(0,0,0,0.10);
+  --muted: rgba(0,0,0,0.62);
+  --bg: #fff;
+}
+
+* { box-sizing: border-box; }
+
+.prefTag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  font-size:12px;
+  color: rgba(0,0,0,0.78);
+  background: rgba(0,0,0,0.03);
+}
+
+.prefTag.important { background: rgba(255, 215, 0, 0.18); }
+.prefTag.less { background: rgba(0, 0, 0, 0.04); }
+.prefTag.spam { background: rgba(255, 0, 0, 0.10); }
+.prefTag.promo { background: rgba(0, 128, 255, 0.10); }
+
+.badgeRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.trainRow{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.chipBtn{
+  border:1px solid var(--border);
+  background: rgba(0,0,0,0.02);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  cursor:pointer;
+}
+.chipBtn:hover{ background: rgba(0,0,0,0.05); }
+
+.draftBtns{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.draftEdit{
+  width:100%;
+  min-height:120px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.seg{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px;
+  text-align:left;
+  background: rgba(0,0,0,0.02);
+}
+.segLabel{
+  font-size:12px;
+  color: var(--muted);
+  margin-bottom:6px;
+}
+.segRow{ display:flex; gap:8px; }
+.chip{
+  border:1px solid var(--border);
+  background: #fff;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  cursor:pointer;
+}
+.chip.on{
+  background: rgba(0,0,0,0.08);
+}
+
+.muted{ color: var(--muted); }
+
+.notice{
+  margin-top:10px;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background: rgba(0,0,0,0.02);
+  font-size: 13px;
+}
+
+/* Add these to the bottom of App.css */
+
+.navItem {
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.navItem:hover {
+  background: rgba(167, 139, 250, 0.1);
+  color: var(--text);
+}
+
+.navItem.active {
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Card Styling for Outlook */
+article.emailCard[data-provider="outlook"] {
+  border-left: 4px solid #0078d4 !important;
+}
+
+.outlookBadge {
+  background: #0078d4;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
