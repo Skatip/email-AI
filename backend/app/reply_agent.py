@@ -217,6 +217,132 @@ def _tone_from_analysis(analysis: Optional[Dict[str, Any]], body: str) -> str:
     return "natural"
 
 
+
+
+def _analysis_lower(analysis: Optional[Dict[str, Any]], key: str, default: str = "") -> str:
+    return str((analysis or {}).get(key, default) or default).strip().lower()
+
+
+def _analysis_value_any(analysis: Optional[Dict[str, Any]], *keys: str, default: str = "") -> str:
+    if not analysis:
+        return default
+    for key in keys:
+        value = analysis.get(key)
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    hs = analysis.get("human_signals") or {}
+    if isinstance(hs, dict):
+        for key in keys:
+            value = hs.get(key)
+            if value is not None and str(value).strip():
+                return str(value).strip()
+    basic = analysis.get("basic_classification") or {}
+    if isinstance(basic, dict):
+        for key in keys:
+            value = basic.get(key)
+            if value is not None and str(value).strip():
+                return str(value).strip()
+    return default
+
+
+def _rule_based_human_reply(body: str, analysis: Optional[Dict[str, Any]]) -> str:
+    """
+    Very small safety layer before Ollama.
+    It prevents hallucinated facts like inventing calendar availability.
+    This is intentionally narrow and only handles common direct questions.
+    """
+    text = (body or "").strip()
+    low = text.lower()
+
+    asks_availability = (
+        "available" in low
+        and any(x in low for x in ["today", "tomorrow", "this week", "now", "later"])
+    )
+    asks_call = any(x in low for x in ["call", "talk", "discuss"])
+
+    if asks_availability and asks_call:
+        return "Yes, I should be available today. What time were you thinking?"
+
+    if asks_availability:
+        return "Yes, I should be available today. What time works for you?"
+
+    if "let me know" in low and asks_call:
+        return "Sure, let me know what time works for you."
+
+    return ""
+
+
+def _should_suppress_reply(email: Dict[Any, Any], analysis: Optional[Dict[str, Any]], body: str, force: bool = False) -> tuple[bool, str]:
+    """
+    Human behavior rule: do not draft replies for notifications, promotions,
+    bills, security alerts, spam, or automated system messages unless the user
+    explicitly forces generation.
+    """
+    if force:
+        return False, ""
+
+    sender = str(email.get("from") or "").lower()
+    subject = str(email.get("subject") or "").lower()
+    text = f"{subject}\n{body}".lower()
+
+    sender_band = _analysis_lower(analysis, "sender_band", "")
+    intent = _analysis_lower(analysis, "intent", "")
+    category = (
+        _analysis_value_any(analysis, "email_type", "email_category", "category", default="")
+        .replace("_", " ")
+        .lower()
+    )
+    relation = (
+        _analysis_value_any(analysis, "relationship_type", "relationship", default="")
+        .replace("_", " ")
+        .lower()
+    )
+    sender_type = _analysis_value_any(analysis, "sender_type", default="").lower()
+    source_folder = _analysis_value_any(analysis, "source_folder", default="").lower()
+
+    hs = (analysis or {}).get("human_signals") or {}
+    if isinstance(hs, dict):
+        sender_type = sender_type or str(hs.get("sender_type") or "").lower()
+
+    risk = float((analysis or {}).get("risk") or 0.0)
+    respond_recommended = (analysis or {}).get("respond_recommended", None)
+
+    hard_no_reply = [
+        "paperless", "statement", "document is ready", "security zone", "sign in security",
+        "verification code", "confirmation", "receipt", "password reset", "alert", "notification",
+        "unsubscribe", "view online", "do not reply", "donotreply", "no-reply", "noreply",
+        "newsletter", "promotion", "offer", "rewards", "deal", "discount",
+    ]
+
+    no_reply_classes = {"promotional", "promotion", "promo", "bill", "billing", "security", "automated", "notification", "transactional"}
+    no_reply_intents = {"security", "bill", "billing", "promotion", "promotional", "notification", "transactional_system", "general"}
+    no_reply_senders = {"bulk", "platform", "automated"}
+
+    # Spam-folder email can still be useful if it is clearly conversational/work/personal.
+    spam_but_human = (
+        source_folder == "spam"
+        and category in {"conversational", "work", "company work", "family personal"}
+        and relation in {"family personal", "family", "personal", "company work", "work", "company"}
+    )
+
+    if respond_recommended is False and not spam_but_human:
+        return True, "No reply needed for this email."
+    if source_folder == "spam" and category == "spam" and not spam_but_human:
+        return True, "No reply generated for spam email."
+    if sender_band in no_reply_senders and not spam_but_human:
+        return True, f"No reply needed for {sender_band} sender."
+    if sender_type in {"automated", "bulk", "platform", "company"} and any(x in text or x in sender for x in hard_no_reply):
+        return True, "No reply needed for automated notification."
+    if category in no_reply_classes:
+        return True, f"No reply needed for {category} email."
+    if intent in no_reply_intents and any(x in text or x in sender for x in hard_no_reply):
+        return True, f"No reply needed for {intent} email."
+    if risk >= 0.70 and relation not in {"family personal", "family", "personal", "company work", "work", "company"}:
+        return True, "No reply generated for high-risk or suspicious email."
+
+    return False, ""
+
+
 # ============================================================
 # STYLE EXAMPLES
 # ============================================================
@@ -322,9 +448,11 @@ def _build_generation_messages(
     )
 
     system_instruction = f"""
-You are writing a reply to a message as the user.
+You are writing a reply to a real human message as the user.
 
-Write the kind of reply a real person would naturally send in that exact situation.
+First behave like a human: if the email is an automated alert, bill notice, security notification, newsletter, promotion, receipt, or document-ready message, the correct response is no reply.
+
+For real conversational emails only, write the kind of reply a real person would naturally send in that exact situation.
 
 Keep it short, natural, and context-aware.
 Usually 1 or 2 sentences.
@@ -337,7 +465,9 @@ Do not over-explain.
 Do not sound robotic, scripted, corporate, or overly polished.
 Do not output labels, headings, markdown, or explanations.
 
-If the message is unclear, ask a brief natural clarification question.
+Never invent facts, times, availability, meeting slots, promises, attachments, or completed actions.
+If the sender asks whether the user is available and no calendar availability is provided, ask what time works instead of inventing a time.
+If the message is unclear or missing information, ask a brief natural clarification question.
 
 Return only the reply text.
 """.strip()
@@ -509,6 +639,46 @@ def draft_reply(
 
     if not body:
         return _empty_result(email, tone, bool(force), analysis, "empty_email_body", used_rag=False)
+
+    suppress, suppress_reason = _should_suppress_reply(email, analysis, body, force=bool(force))
+    if suppress:
+        result = _empty_result(email, tone, bool(force), analysis, suppress_reason, used_rag=False)
+        result["safety_blocked"] = True
+        result["safety_reason"] = suppress_reason
+        result["reply_meta"]["suppressed"] = True
+        result["reply_meta"]["suppress_reason"] = suppress_reason
+        result["meta"]["reply_meta"]["suppressed"] = True
+        result["meta"]["reply_meta"]["suppress_reason"] = suppress_reason
+        return result
+
+    safe_reply = _rule_based_human_reply(body, analysis)
+    if safe_reply:
+        return {
+            "sender": (email.get("from") or "").strip(),
+            "reply": safe_reply,
+            "tone": tone,
+            "confidence": 0.91,
+            "reply_meta": {
+                "strategy": "safe_reply_goal_no_hallucination",
+                "model": "rule_guard_before_ollama",
+                "force": bool(force),
+                "used_rag": False,
+                "suppressed": False,
+                "regenerated": False,
+                "refined": False,
+                "reply_intent": "ask_clarification",
+            },
+            "meta": {
+                "strategy": "safe_reply_goal_no_hallucination",
+                "model": "rule_guard_before_ollama",
+                "force": bool(force),
+                "reply_meta": {
+                    "used_rag": False,
+                    "refined": False,
+                    "regenerated": False,
+                },
+            },
+        }
 
     style_examples = _style_examples(body, analysis)
     used_rag = bool(style_examples)

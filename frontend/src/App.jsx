@@ -9,13 +9,14 @@ import {
 } from "./api";
 import EmailCard from "./components/EmailCard";
 import DetailPanel from "./components/DetailPanel";
+import ProviderLogo from "./components/ProviderLogo";
 import "./styles.css";
 
 const PROVIDERS = [
   {
     id: "gmail",
     name: "Gmail",
-    icon: "✉️",
+    logo: "gmail",
     email: import.meta.env.VITE_GMAIL_USER || "",
     color: "gmail",
     description: "Analyze Gmail inbox with priority, risk, replies, summaries, and reminders.",
@@ -23,7 +24,7 @@ const PROVIDERS = [
   {
     id: "outlook",
     name: "Outlook",
-    icon: "📬",
+    logo: "outlook",
     email: import.meta.env.VITE_OUTLOOK_USER || "",
     color: "outlook",
     description: "Analyze Outlook inbox. Slack and Jira can be added later.",
@@ -39,6 +40,24 @@ function fmtTime(ts) {
   const n = Number(ts) * 1000;
   if (!Number.isFinite(n)) return "No time";
   return new Date(n).toLocaleString();
+}
+
+
+function attachmentSearchText(it) {
+  const attachments = Array.isArray(it?.attachments) ? it.attachments : [];
+  const analyses = Array.isArray(it?.attachment_analysis) ? it.attachment_analysis : [];
+  return [
+    ...attachments.map((a) => `${a?.filename || ""} ${a?.file_type || ""} ${a?.mime_type || ""}`),
+    ...analyses.map((a) => `${a?.filename || ""} ${a?.document_type || ""} ${a?.document_label || ""} ${a?.summary || ""}`),
+  ].join(" ");
+}
+
+function hasAttachmentDocType(it, docType) {
+  const analyses = Array.isArray(it?.attachment_analysis) ? it.attachment_analysis : [];
+  const attachments = Array.isArray(it?.attachments) ? it.attachments : [];
+  const target = String(docType || "").toLowerCase();
+  return analyses.some((a) => String(a?.document_type || "").toLowerCase() === target) ||
+    attachments.some((a) => String(a?.file_type || "").toLowerCase() === target);
 }
 
 function ThemeToggle({ theme, toggleTheme }) {
@@ -89,7 +108,7 @@ function LandingPage({ onChoose, theme, toggleTheme }) {
         <div className="providerGrid">
           {PROVIDERS.map((p) => (
             <button key={p.id} className={`providerTile ${p.color}`} onClick={() => onChoose(p)}>
-              <div className="providerIcon">{p.icon}</div>
+              <div className="providerIcon"><ProviderLogo type={p.logo} size={34} /></div>
               <div>
                 <h2>{p.name}</h2>
                 <p>{p.description}</p>
@@ -99,7 +118,7 @@ function LandingPage({ onChoose, theme, toggleTheme }) {
           ))}
 
           <button className="providerTile disabled" disabled>
-            <div className="providerIcon">💬</div>
+            <div className="providerIcon"><ProviderLogo type="slack" size={34} /></div>
             <div>
               <h2>Slack</h2>
               <p>Coming later for action items and team messages.</p>
@@ -107,7 +126,7 @@ function LandingPage({ onChoose, theme, toggleTheme }) {
           </button>
 
           <button className="providerTile disabled" disabled>
-            <div className="providerIcon">🧩</div>
+            <div className="providerIcon"><ProviderLogo type="jira" size={34} /></div>
             <div>
               <h2>Jira</h2>
               <p>Coming later for issue creation and task tracking.</p>
@@ -255,7 +274,13 @@ export default function App() {
   }
 
   async function analyzeVisibleEmails(list) {
-    const batch = (list || []).slice(0, Math.min(Number(maxResults || 10), 10));
+    // Speed-first: render inbox immediately, then analyze only a small visible batch.
+    // Full AI work still runs when the user opens/clicks actions; this avoids blocking the UI.
+    const autoLimit = Number(import.meta.env.VITE_AUTO_ANALYZE_LIMIT || 3);
+    const batch = (list || []).slice(0, Math.min(Number(maxResults || 10), autoLimit));
+
+    // Let the browser paint the inbox before background analysis begins.
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     for (const email of batch) {
       if (!email?.id || email.analysis_status === "done") continue;
@@ -319,14 +344,28 @@ export default function App() {
 
     if (q) {
       res = res.filter((it) =>
-        [it.subject, it.from, it.snippet, it.body].some((x) =>
+        [it.subject, it.from, it.snippet, it.body, attachmentSearchText(it)].some((x) =>
           String(x || "").toLowerCase().includes(q)
         )
       );
     }
 
     if (labelFilter !== "ALL") {
-      res = res.filter((it) => it.label === labelFilter);
+      if (labelFilter === "ATTACHMENTS") {
+        res = res.filter((it) => Array.isArray(it.attachments) && it.attachments.length > 0);
+      } else if (labelFilter === "INVOICE") {
+        res = res.filter((it) => hasAttachmentDocType(it, "invoice"));
+      } else if (labelFilter === "CONTRACT") {
+        res = res.filter((it) => hasAttachmentDocType(it, "contract"));
+      } else if (labelFilter === "OFFER_LETTER") {
+        res = res.filter((it) => hasAttachmentDocType(it, "offer_letter"));
+      } else if (labelFilter === "RESUME") {
+        res = res.filter((it) => hasAttachmentDocType(it, "resume"));
+      } else if (labelFilter === "TAX_DOCUMENT") {
+        res = res.filter((it) => hasAttachmentDocType(it, "tax_document"));
+      } else {
+        res = res.filter((it) => it.label === labelFilter);
+      }
     }
 
     return res;
@@ -361,7 +400,7 @@ export default function App() {
         </button>
 
         <div className="brandBlock">
-          <div className={`brandIcon ${provider}`}>{workspace.icon}</div>
+          <div className={`brandIcon ${provider}`}><ProviderLogo type={workspace.logo || provider} size={30} /></div>
           <div>
             <h1>{workspace.name} AI Inbox</h1>
             <p>{activeEmail}</p>
@@ -426,6 +465,12 @@ export default function App() {
               <option value="HIGH">High</option>
               <option value="MEDIUM">Medium</option>
               <option value="LOW">Low</option>
+              <option value="ATTACHMENTS">Has Attachments</option>
+              <option value="INVOICE">Invoices</option>
+              <option value="CONTRACT">Contracts</option>
+              <option value="OFFER_LETTER">Offer Letters</option>
+              <option value="RESUME">Resumes</option>
+              <option value="TAX_DOCUMENT">Tax Documents</option>
             </select>
 
             <select
@@ -457,6 +502,7 @@ export default function App() {
                       prev.map((x) => (x.id === it.id ? { ...x, ...patch } : x))
                     )
                   }
+                  onFollowupCreated={loadFollowups}
                 />
               ))}
 

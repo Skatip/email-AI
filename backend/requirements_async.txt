@@ -1,0 +1,6 @@
+# Async AI Engine dependencies
+# Install inside backend venv:
+# pip install -r requirements_async.txt
+
+celery>=5.4.0
+redis>=5.0.0

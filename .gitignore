@@ -5,6 +5,7 @@ frontend/dist/
 __pycache__/
 *.pyc
 
+backend/app/app_data/learning_store.json
 .env
 backend/.env
 frontend/.env

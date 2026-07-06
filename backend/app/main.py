@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.db import init_db, kv_get, kv_set, upsert_sender
-from app.gmail_service import fetch_emails, fetch_full_thread, fetch_inbox_fast, fetch_email_body
+from app.gmail_service import fetch_emails, fetch_full_thread, fetch_inbox_fast, fetch_email_body, fetch_gmail_attachment
 from app.outlook_service import fetch_outlook_emails
 from app.priority_engine import priority_score
 from app.utils import parse_sender
@@ -20,13 +20,23 @@ from app.learning import predict_user_preference, apply_user_override, record_fe
 from app.thread_summary_agent import summarize_thread
 from app.compose_from_notes_agent import write_from_notes
 from app.analytics_service import track_email_event, get_analytics_summary
+from app.attachment_analysis import analyze_attachment_bytes
 
 try:
-    from app.followup_service import create_followup, list_followups, list_due_followups, update_followup_status
+    from app.followup_service import (
+        create_followup,
+        list_followups,
+        list_due_followups,
+        update_followup_status,
+        snooze_followup,
+        suggest_followup_from_email,
+    )
 except Exception:
     from app.followup_service import create_followup, list_followups
     list_due_followups = None
     update_followup_status = None
+    snooze_followup = None
+    suggest_followup_from_email = None
 
 app = FastAPI(title="Email Priority Backend", version="1.9.0-fast-inbox")
 
@@ -38,16 +48,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-FOCUSED_GMAIL_QUERY = (
-    "{category:primary in:spam} "
-    "-category:promotions -category:social -category:forums "
-    "-unsubscribe"
-)
-
-
+# Gmail filtering is handled inside gmail_service.py.
+# It fetches Primary + Spam from the last 7 days and does not hide emails here.
 def _effective_query(user_query: str) -> str:
-    q = (user_query or "").strip()
-    return f"{FOCUSED_GMAIL_QUERY} {q}".strip() if q else FOCUSED_GMAIL_QUERY
+    return (user_query or "").strip()
 
 
 def _labels_text(item: Dict[str, Any]) -> str:
@@ -95,7 +99,7 @@ def _quick_human_filter(item: Dict[str, Any]) -> bool:
 
 _ANALYZE_CACHE: Dict[str, Any] = {}
 _ANALYZE_CACHE_LOCK = threading.Lock()
-_ANALYZE_CACHE_TTL = 30
+_ANALYZE_CACHE_TTL = int(os.getenv("INBOX_CACHE_TTL_SECONDS", "90"))
 
 
 def _cache_get(key: str):
@@ -119,6 +123,29 @@ def _cache_set(key: str, value):
 def _clear_cache():
     with _ANALYZE_CACHE_LOCK:
         _ANALYZE_CACHE.clear()
+
+_ATTACHMENT_RESULT_CACHE: Dict[str, Any] = {}
+_ATTACHMENT_RESULT_CACHE_LOCK = threading.Lock()
+_ATTACHMENT_RESULT_CACHE_TTL = int(os.getenv("ATTACHMENT_RESULT_CACHE_TTL_SECONDS", "1800"))
+
+
+def _attachment_cache_get(key: str):
+    now = time.time()
+    with _ATTACHMENT_RESULT_CACHE_LOCK:
+        item = _ATTACHMENT_RESULT_CACHE.get(key)
+        if not item:
+            return None
+        exp, value = item
+        if exp < now:
+            _ATTACHMENT_RESULT_CACHE.pop(key, None)
+            return None
+        return value
+
+
+def _attachment_cache_set(key: str, value):
+    with _ATTACHMENT_RESULT_CACHE_LOCK:
+        _ATTACHMENT_RESULT_CACHE[key] = (time.time() + _ATTACHMENT_RESULT_CACHE_TTL, value)
+
 
 
 @app.on_event("startup")
@@ -170,8 +197,7 @@ async def inbox_fast(
 
     out: List[Dict[str, Any]] = []
     for e in raw:
-        if provider == "gmail" and not _quick_human_filter(e):
-            continue
+        # Do not drop messages here. Gmail service already limits Gmail to Primary + Spam.
         out.append({
             "id": e.get("id"),
             "threadId": e.get("threadId"),
@@ -181,6 +207,8 @@ async def inbox_fast(
             "body": "",
             "ts": e.get("ts", 0),
             "labelIds": e.get("labelIds") or e.get("labels") or [],
+            "attachments": e.get("attachments", []),
+            "has_attachments": bool(e.get("attachments", [])),
             "provider": provider,
             "priority": 0.0,
             "label": "PENDING",
@@ -191,7 +219,11 @@ async def inbox_fast(
             "respond_recommended": False,
             "human_signals": {},
             "analysis_status": "pending",
-            "mail_scope": "FAST_PRIMARY_AND_HUMAN_SPAM" if provider == "gmail" else "FAST_INBOX",
+            "source_folder": e.get("source_folder", ""),
+            "email_type": e.get("email_type", ""),
+            "relationship_type": e.get("relationship_type", ""),
+            "basic_classification": e.get("basic_classification", {}),
+            "mail_scope": "GMAIL_PRIMARY_AND_SPAM_LAST_7_DAYS" if provider == "gmail" else "FAST_INBOX",
         })
         if len(out) >= max_results:
             break
@@ -246,6 +278,12 @@ async def email_analyze(payload: Dict[str, Any] = Body(...)):
             "risk_urls": (getattr(po, "human_signals", None) or {}).get("risk_urls", []),
             "provider": provider,
             "analysis_status": "done",
+            "source_folder": email.get("source_folder", ""),
+            "email_type": email.get("email_type", ""),
+            "relationship_type": email.get("relationship_type", ""),
+            "basic_classification": email.get("basic_classification", {}),
+            "attachments": email.get("attachments", []),
+            "has_attachments": bool(email.get("attachments", [])),
         }
 
         try:
@@ -399,6 +437,23 @@ def followup_status(followup_id: int, payload: Dict[str, Any] = Body(...)):
     return update_followup_status(followup_id, payload.get("status"))
 
 
+
+
+@app.post("/followups/{followup_id}/snooze")
+def followup_snooze(followup_id: int, payload: Dict[str, Any] = Body(default={})): 
+    if snooze_followup is None:
+        raise HTTPException(status_code=400, detail="Followup snooze is not available")
+    seconds = int(payload.get("seconds") or payload.get("delay_seconds") or 3600)
+    return snooze_followup(followup_id, seconds=seconds)
+
+
+@app.post("/followups/suggest")
+def followup_suggest(payload: Dict[str, Any] = Body(...)):
+    if suggest_followup_from_email is None:
+        raise HTTPException(status_code=400, detail="Followup suggestion is not available")
+    return suggest_followup_from_email(payload.get("email") or {}, payload.get("analysis") or {})
+
+
 @app.post("/compose/from-notes")
 def compose_notes(payload: Dict[str, Any] = Body(...)):
     return write_from_notes(payload.get("notes"), payload.get("tone", "professional"))
@@ -412,6 +467,50 @@ def analytics(days: int = Query(default=14)):
         return get_analytics_summary()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analytics failed: {str(e)}")
+
+
+@app.post("/attachments/analyze")
+async def attachment_analyze(payload: Dict[str, Any] = Body(...)):
+    provider = payload.get("provider", "gmail")
+    message_id = payload.get("message_id") or payload.get("email_id")
+    attachment = payload.get("attachment") or {}
+
+    if provider != "gmail":
+        raise HTTPException(status_code=400, detail="Attachment analysis currently supports Gmail only.")
+
+    if not message_id:
+        raise HTTPException(status_code=400, detail="message_id is required")
+
+    attachment_id = attachment.get("attachment_id") or payload.get("attachment_id")
+    filename = attachment.get("filename") or payload.get("filename") or "attachment"
+    mime_type = attachment.get("mime_type") or payload.get("mime_type") or ""
+
+    if not attachment_id:
+        raise HTTPException(status_code=400, detail="attachment_id is required")
+
+    cache_key = f"{provider}|{message_id}|{attachment_id}|{filename}|{mime_type}"
+    cached = _attachment_cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        data = await asyncio.to_thread(fetch_gmail_attachment, message_id, attachment_id)
+
+        result = await asyncio.to_thread(
+            analyze_attachment_bytes,
+            filename,
+            mime_type,
+            data,
+            payload.get("sender_band", ""),
+            payload.get("source_folder", ""),
+            payload.get("email_subject", ""),
+            payload.get("email_sender", ""),
+            payload.get("email_snippet", ""),
+        )
+        _attachment_cache_set(cache_key, result)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Attachment analysis failed: {str(e)}")
 
 
 @app.get("/health")

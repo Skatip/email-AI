@@ -1,0 +1,18 @@
+# Optional packages for Attachment Intelligence v3
+# Install inside backend venv:
+# pip install -r requirements_attachment_optional.txt
+
+pypdf>=4.0.0
+PyPDF2>=3.0.0
+pdfminer.six>=20231228
+python-docx>=1.1.0
+openpyxl>=3.1.2
+Pillow>=10.0.0
+pytesseract>=0.3.10
+
+# Recommended PDF OCR renderers. PyMuPDF usually works on Windows without Poppler.
+PyMuPDF>=1.24.0
+pypdfium2>=4.30.0
+
+# Optional Poppler-based fallback. Requires Poppler installed separately on Windows.
+pdf2image>=1.17.0

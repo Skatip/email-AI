@@ -142,3 +142,13 @@ export async function composeFromNotes(payload) {
   });
   return await handle(res);
 }
+
+
+export async function analyzeAttachment(payload) {
+  const res = await fetch(`${API_BASE}/attachments/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return await handle(res);
+}

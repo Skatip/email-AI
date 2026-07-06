@@ -1,4 +1,5 @@
 import React from "react";
+import ProviderLogo from "./ProviderLogo";
 
 const styles = {
   sidebarInner: {
@@ -46,6 +47,11 @@ const styles = {
   },
   icon: {
     fontSize: "18px",
+    width: "26px",
+    height: "26px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 };
 
@@ -68,7 +74,7 @@ export const Sidebar = ({ activeProvider, onProviderChange }) => {
           style={getNavItemStyle(activeProvider === "gmail")}
           onClick={() => onProviderChange("gmail", "sandeep@gmail.com")}
         >
-          <span style={styles.icon}>📧</span>
+          <span style={styles.icon}><ProviderLogo type="gmail" size={24} /></span>
           <div style={styles.navInfo}>
             <span style={styles.navTitle}>Gmail</span>
             <span style={styles.navSub}>sandeep@gmail.com</span>
@@ -79,7 +85,7 @@ export const Sidebar = ({ activeProvider, onProviderChange }) => {
           style={getNavItemStyle(activeProvider === "outlook")}
           onClick={() => onProviderChange("outlook", "katipagalasandeep@outlook.com")}
         >
-          <span style={styles.icon}>Ⓜ️</span>
+          <span style={styles.icon}><ProviderLogo type="outlook" size={24} /></span>
           <div style={styles.navInfo}>
             <span style={styles.navTitle}>Outlook</span>
             <span style={styles.navSub}>katipagalasandeep@outlook.com</span>
